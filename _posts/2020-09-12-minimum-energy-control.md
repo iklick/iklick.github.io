@@ -8,6 +8,52 @@ tags:
   - linear systems
 ---
 
+## Background
+
+Linear (and time-invariant) dynamical systems are ubiquitous in the field of control because 
+
+1. they are (at least approximately) representative of many real systems and
+2. they are the most analytically tractable.
+
+In the system, there are \$ n \$ states which completely define the system, \$ m \$ control inputs which we will design, and \$ p \$ outputs which are quantites that we care about in some sense.
+
+The system of differential equations that describes the evolution of the states is,
+
+$$
+  \dot{x}(t) = A x(t) + B u(t), \quad x(t_0) = x_0, \quad t \geq t_0
+$$
+
+where \$ x(t) \in \mathbb{R}^n \$ is the value of the states and \$ u(t) \in \mathbb{R}^m \$ is the value of the control inputs at time \$ t \$.
+At the initial time, designated \$ t_0 \$, the state vector is known completely, called the initial condition.
+The state matrix \$ A \in \mathbb{R}^{n \times n} \$ describes the dependencies on the evolution of states and the input matrix \$ B \in \mathbb{R}^{n \times m} \$ describes the effect our external control inputs have on the system.
+
+The output of the system is a set of linear combinations of the states,
+
+$$
+  y(t) = C x(t)
+$$
+
+where the matrix \$ C \in \mathbb{R}^{p \times n} \$ describes which linear combinations of the states constitute the outputs.
+We are interested in deriving a control input that drives this linear system from the prescribed initial condition to some desired output, \$ y(t_f) = y_f \$, for a prescribed final time \$ t_f > t_0 \$.
+
+The first question one must ask is whether there exists any control input \$ u : [t_0,t_f] \mapsto \mathbb{R}^m \$ to drive the system from an initial condition \$ x_0 \$ to the final output, \$ y_f \$.
+
+> **Definition: Output Controllability**
+>
+> A linear system, \$ (A,B,C) \$, is _output controllable_ if there exists a control input which drives the linear system from any initial condition \$ x(t_0) = x_0 \$ to any final output \$ y(t_f) = y_f \$ for any time duration \$ [t_0,t_f] \$.
+
+The sufficient and necessary conditions for \$ (A,B,C) \$ to be _output controllable_ will be investigated in the below derivation.
+
+If the system \$ (A,B,C) \$ is output controllable, then there is an infinite amount of possible inputs to drive the system from the initial condition \$ x_0 \$ to the final output \$ y_f \$ which will also be demonstrated.
+
+As the designer, we must select which of these inputs to choose based on any number of potential criteria:
+
+1. Energy consumption (how much fuel is available?)
+2. Saturation of the actuator (are there values \$ u^L \leq u(t) \leq u^U \$ that bound the input?)
+3. Locality of the states (are there values \$ x^L \leq x(t) \leq x^U \$ that bound the states?)
+
+**Optimal control** provides a framework for choosing among the infinite set of control inputs an input that can satisfy these constraints while minimizing some cost.
+
 ## Minimum Energy Control Problem
 
 This post is a first application of the [general optimal control framework](/posts/2020/09/optimal-control-framework/) presented in the previous post.
@@ -15,9 +61,9 @@ The minimum energy control problem is special as it admits a simple closed-form 
 
 $$
   \begin{aligned}
-    \min && &J = \frac{1}{2} \int_{t_0}^{t_f} \textbf{u}^T(t) R \textbf{u}(t) dt\\
-    \text{s.t.} && &\dot{\textbf{x}}(t) = A \textbf{x}(t) + B \textbf{u}(t)\\
-    && &\textbf{x}(t_0) = \textbf{x}_0, \quad C x(t_f) = y_f
+    \min && &J = \frac{1}{2} \int_{t_0}^{t_f} u^T(t) R u(t) dt\\
+    \text{s.t.} && &\dot{x}(t) = A x(t) + B u(t)\\
+    && &x(t_0) = x_0, \quad C x(t_f) = y_f
   \end{aligned}
 $$
 
@@ -114,4 +160,12 @@ as is the optimal state trajectory
 
 $$
   x^*(t) = e^{A(t-t_0)} x_0 + W(t-t_0) e^{A^T(t_f-t)} C^T \left( C W(t_f-t_0) C^T \right)^{-1} \left( y_f - C e^{A(t_f-t_0)} x_0 \right)
+$$
+
+### Optimal Cost
+
+Returning to the original cost,
+
+$$
+  J = \frac{1}{2} \int_{t_0}^{t_f} u^T(t) u(t) dt = \frac{1}{2} \beta^T \left( C W(t_f-t_0) C^T \right)^{-1} C \int_{t_0}^{t_f} 
 $$
