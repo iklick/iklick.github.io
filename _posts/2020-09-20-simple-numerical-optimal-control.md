@@ -208,3 +208,64 @@ $$
 This matrix must be constructed in triplet format so each Jacobian block is constructed in triplet format as well.
 One issue that may be addressed in a future post is the poor ordering of the constraints and variables.
 Ideally, one would want this Jacobian to have a _narrow band_, that is, all non-zeros lie within some interval around the diagonal.
+
+## EXAMPLES
+
+The following small examples are used to test the implementation to ensure it was coded correctly.
+
+### The Simplest Example (Scalar Minimum Energy)
+
+The scalar minimum energy problem has a defined initial time and state and final time and state, a single state \$ n_x = 1 \$, a single control input \$ n_u = 1 \$, and no non-box constraints so \$ n_h = n_e = 0 \$.
+
+The problem can be expressed as,
+
+$$
+  \begin{aligned}
+    \min && &J = \frac{1}{2} \int_{t_0}^{t_f} u^2(t) dt\\
+    \text{s.t.} && &\dot{x}(t) = a x(t) + b u(t)\\
+    && &x(t_0) = x_0, \quad x(t_f) = x_f
+  \end{aligned}
+$$
+
+The Hamiltonian for this problem is,
+
+$$
+  H = \frac{1}{2} u^2 + a \lambda x + b \lambda u
+$$
+
+The stationarity condition is,
+
+$$
+  \frac{\partial H}{\partial u} = u + b \lambda = 0 \quad \Rightarrow \quad u(t) = -b \lambda(t)
+$$
+
+The evolution of the co-state can now be written,
+
+$$
+  \dot{\lambda}(t) = -\frac{\partial H}{\partial x} = -a \lambda(t) \quad \Rightarrow \quad \lambda(t) = e^{-a(t-t_f)} \lambda(t_f)
+$$
+
+With the optimal input now known up to an unknown constant, we can write the optimal state trajectory,
+
+$$
+  \begin{aligned}
+    x(t) &= e^{a (t-t_0)} x_0 - b^2 \int_{t_0}^t e^{a(t-\tau)} e^{a(t_f-\tau)} d\tau \lambda(t_f)\\
+    &= e^{a(t-t_0)} x_0 - b^2 \int_{t_0}^t e^{a(t_f+t-2\tau)} d\tau \lambda(t_f)\\
+    &= e^{a(t-t_0)} x_0 - \frac{b^2}{2a} \left[ e^{a(t_f+t-2t_0)} - e^{a(t_f-t)} \right] \lambda(t_f)
+  \end{aligned}
+$$
+
+To determine the final co-state value, apply the constraint \$ x(t_f) = x_f \$ by setting \$ t = t_f \$ in the optimal state trajectory,
+
+$$
+  x_f = e^{a(t_f-t_0)} x_0 + \frac{b^2}{2a} \left[1 - e^{2a (t_f-t_0)} \right] \lambda(t_f)
+$$
+
+which, after rearranging, yields the final value of the co-state,
+
+$$
+  \lambda(t_f) = \frac{2a}{b^2} \left[ \frac{x_f - e^{a(t_f-t_0)} x_0}{1 - e^{2a(t_f-t_0)}} \right]
+$$
+
+With this value, we have the optimal state trajectory and optimal control input written above.
+
