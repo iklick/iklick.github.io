@@ -9,20 +9,91 @@ tags:
   - optimization
 ---
 
+Most optimal control problems and analytically intractable, that is, their solution cannot be expressed in terms of elementary functions.
+This is due to the fact that the solution most likely requires solving the differential equations that govern the evolution of the states which, as anyone familiar with differential equations knows, is also unlikely to be possible.
+Rather than throw up our hands though, numerical tools can be used to _numerically solve_ the optimal control problem.
+There are a number of different ways to do this, but in this post, I examine what I believe is the simplest method based on the trapezoidal method.
+
 ## The Optimal Control Problem
 
-The optimal control problem addressed in this post can most generally be defined as,
+For reference, the optimal control problem addressed in this post can most generally be defined as,
 
 $$
   \begin{aligned}
     \min && &J = E(x(t_0), x(t_f), t_0, t_f) + \int_{t_0}^{t_f} F(x(t),u(t)) dt\\
-    \text{s.t.} && &\dot{x}(t) = f(x(t),u(t))\\
+    \text{s.t.} && &\frac{dx}{dt} = f(x(t),u(t))\\
     && &h^L \leq h(x(t),u(t)) \leq h^U\\
-    && &e^L \leq e(x(t_0), x(t_f), t_0, t_f) \leq e^U
+    && &x^L \leq x(t) \leq x^U\\
+    && &u^L \leq u(t) \leq u^U\\
+    && &e^L \leq e(x(t_0), x(t_f), t_0, t_f) \leq e^U\\
+    && &x_0^L \leq x(t_0) \leq x_0^U\\
+    && &x_f^L \leq x(t_f) \leq x_f^U\\
+    && &t_0^L \leq t_0 \leq t_0^U\\
+    && &t_f^L \leq t_f \leq t_f^U
   \end{aligned}
 $$
 
-## Discretizing the Dynamics
+More details on optimal control and how to apply Pontryagin's Maximum Principle can be found [here](/optimalcontrol/).
+
+
+## Temporal Transformation
+
+While the above form is often used when writing down the optimal control problem, the time domain is typically standardized to a specific interval, denoted \$ [\tau_0, \tau_f] \$ where, in our formulations, we take \$ \tau_0 = -1 \$ and \$ \tau_f = 1 \$.
+The transformation in general can be determined from the following linear system of equations,
+
+$$
+  \begin{aligned}
+    t_0 &= a \tau_0 + b\\
+    t_f &= a \tau_f + b
+  \end{aligned}
+$$
+
+so that the original time can be reconstructed from the normalized time,
+
+$$
+  t(\tau) = a \tau + b
+$$
+
+Solving this system of equations yields,
+
+$$
+  a &= \frac{t_f-t_0}{\tau_f - \tau_0}\\
+  b &= t_0 - \frac{t_f-t_0}{\tau_f-\tau_0} \tau_0
+$$
+
+Setting \$ \tau_0 = -1 \$ and \$ \tau_f = 1 \$ yields \$ a = \frac{t_f-t_0}{2} \$ and \$ b = \frac{t_f+t_0}{2} \$.
+
+The dynamical equations are rewritten in terms of the scaled time \$ \tau \$ using the chain rule,
+
+$$
+  \frac{dx}{d\tau} = \frac{dx}{dt} \frac{dt}{d\tau} = \frac{t_f-t_0}{2} \frac{dx}{dt}
+$$
+
+Similarly, a \$ u \$-substitution transforms the integral cost,
+
+$$
+  \int_{t_0}^{t_f} F(x(t),u(t)) dt = \frac{t_f-t_0}{2} \int_{-1}^1 F(x(t(\tau)),u(t(\tau))) d\tau
+$$
+
+The states and controls in terms of the normalized time are strictly denoted \$ x(t(\tau)) \$ and \$ u(t(\tau)) \$ but, as an abuse of notation, we will denote the states and controls as \$ x(\tau) \$ and \$ u(\tau) \$.
+Just note that \$ \tau \$ is always the scaled time and \$ t \$ is always the original time.
+
+The scaled optimal control problem is,
+
+$$
+  \begin{aligned}
+    \min && &J = E(x(t_0),x(t_f),t_0,t_f) + \frac{t_f-t_0}{2} \int_{-1}^1 F(x(\tau),u(\tau)) d\tau\\
+    \text{s.t.} && &\frac{dx}{d\tau} = \frac{t_f-t_0}{2} f(x(\tau),u(\tau))\\
+    && &h^L \leq h(x(\tau),u(\tau)) \leq h^U\\
+    && &x^L \leq x(\tau) \leq x^U\\
+    && &u^L \leq u(\tau) \leq u^U\\
+    && &e^L \leq e(x(t_0),x(t_f),t_0,t_f) \leq e^U\\
+    && &x_0^L \leq x(t_0) \leq x_0^U\\
+    && &t_0^L \leq t_0 \leq t_0^U\\
+    && &x_f^L \leq x(t_f) \leq x_f^U\\
+    && &t_f^L \leq t_f \leq t_f^U
+  \end{aligned}
+$$
 
 There are many ways to discretize time in the differential equations that appear in the optimal control problem.
 The simplest approach is using a central difference method (or the trapezoidal rule) which is what is descibed here.

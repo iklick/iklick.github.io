@@ -108,7 +108,10 @@ The solution of this linear system of equations is,
 
 $$
   \lambda(t) = e^{-A(t-t_f)} C^T \nu_f = e^{A^T(t_f-t)} C^T \nu_f
-$$
+$$Symmetry induced group consensus
+Published in Chaos: An Interdisciplinary Journal of Nonlinear Science, 2019
+
+
 
 This expression can be plugged into the optimal input to cast the unknown time-varying input into a set of \$ p \$ unknown variables, \$ \nu_f \$.
 
