@@ -133,6 +133,8 @@ $$
 
 ## Outline of Analytic Examination
 
-1. Count the number of state variables, control variables, non-box path and end-point constraints called \$ n_x \$, \$ n_u \$, \$ n_h \$, and \$ n_e \$, respectively.
-2. Write down the
+1. Count the number of state variables, control variables, non-box path and end-point constraints called \$ n_x \$, \$ n_u \$, \$ n_h \$, and \$ n_e \$, respectively. 
+2. Write down the functions \$ E \$, \$ F \$, \$ f \$, \$ h \$, and \$ e \$ and their gradients/Jacobians with respect to the states and controls.
+3. Use the stationarity condition to either (i) express the control input in terms of the states and co-states or (ii) express the switching structure.
+4. First try solving the state / co-state dynamical equations without the constraints and check if the solution violates any of the constraints. If it does not, then the optimal solution has been found! If it does, then 
 
