@@ -5,7 +5,7 @@ permalink: /optimalcontrol/
 author_profile: true
 ---
 
-This page is used as a reference for important topics regarding optimal control which I may reference in the individual posts about particular problems.
+This page is used as a reference for important topics regarding optimal control which I may refer to in the individual posts about particular problems.
 
 The problem is presented in a modified form compared to textbooks on optimal control.
 The changes done are to make the presentation more amenable to numerical solving in future posts.
