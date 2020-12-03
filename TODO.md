@@ -5,14 +5,15 @@
 3. Minimum Energy 2D Double Integrator
 4. Free Final Time
 5. Bang-Bang
-6. State Constraints
-7. Obstacle Avoidance
-8. Herding Double Integrators
-9. Average Final State
-10. Minimum Energy Control
-11. LQR
-12. Steering
-13. Aqua
+6. Bang-Bang with Free Final Time
+7. State Constraints
+8. Obstacle Avoidance
+9. Herding Double Integrators
+10. Average Final State
+11. Minimum Energy Control
+12. LQR
+13. Steering
+14. Aqua
 
 # Outline of Research Posts
 
