@@ -9,6 +9,7 @@ redirect_from:
 ---
 
 Hi! My name is Isaac Klickstein, a recent doctoral graduate in mechanical engineering from the University of New Mexico.
+You can download my dissertation at the UNM [digital repository](https://digitalrepository.unm.edu/me_etds/181/).
 
 This site collects my research projects from my time as a graduate student and my current projects of personal interest. 
 
