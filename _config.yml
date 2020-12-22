@@ -82,7 +82,7 @@ analytics:
 author:
   name             : "Isaac Klickstein"
   avatar           : "klickstein_headshot.jpg"
-  bio              : "Your biography for the left-hand sidebar"
+  bio              : "Engineering PhD applying numerical methods to solve controls and optimization problems"
   location         : "Boston, MA"
   employer         :
   pubmed           : "https://pubmed.ncbi.nlm.nih.gov/?term=isaac+klickstein"
@@ -102,7 +102,7 @@ author:
   instagram        :
   impactstory      : #"https://profiles.impactstory.org/u/xxxx-xxxx-xxxx-xxxx"
   lastfm           :
-  linkedin         :
+  linkedin         : "https://www.linkedin.com/in/iklick/"
   orcid            : "https://orcid.org/0000-0002-6830-8154"
   pinterest        :
   soundcloud       :

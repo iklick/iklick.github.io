@@ -8,16 +8,16 @@ redirect_from:
   - /about.html
 ---
 
-Hi! My name is Isaac Klickstein, a recent doctoral graduate in mechanical engineering from the University of New Mexico.
+I am a recent doctoral graduate in mechanical engineering from the University of New Mexico.
 You can download my dissertation at the UNM [digital repository](https://digitalrepository.unm.edu/me_etds/181/).
 
-This site collects my research projects from my time as a graduate student and my current projects of personal interest. 
+This site collects research projects from my time as a graduate student and my current projects of personal interest. 
 
 I am always looking for collaborators if anything you see here excites you!
 
 ## Topics
 
-The following topics make up the vast majority of my time as a graduate school.
+The following topics make up the vast majority of my time as a graduate student.
 
 ### Optimal Control
 
@@ -37,9 +37,10 @@ Some background and reference material is contained [here](/optimalcontrol/)
 
 This project started after, out of curiosity, I solved the minimum energy control problem for an infinitely long chain of single integrators.
 Using a discrete Fourier transform, this problem can be solved in detail, unlike general minimum energy control problems.
+Details can be found in the paper [The controllability Gramian of lattice graphs](https://www.sciencedirect.com/science/article/pii/S0005109820300315?casa_token=odFFeqiLAzwAAAAA:PshF6UjlYAPORo85U7p-BCdYh4Xbi6XX17xXLLxRI6Dgydl06QR7yHDrr8Oz1_xfmg6RwN7ESVlq).
 The scaling behavior found with respect to graph properties offered surprising insight into the control energy for general complex networks including bounds.
 
-There is a lot of potential still I believe in deriving additional results using lattices to better understand control properties in the presence of _near symmetries_, optimal driver node selection, and 
+There is a lot of potential still, I believe, in deriving additional results using lattices to better understand control properties in the presence of _near symmetries_, optimal driver node selection, and the interplay between structure and controllability.
 
 ### Graph Symmetries
 
