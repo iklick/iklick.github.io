@@ -1,7 +1,7 @@
 ---
 title: 'Optimal Control Problem: Average Final State'
-date: 2020-09-11
-permalink: /posts/2020/09/optimal-control-framework/
+date: 2020-10-01
+permalink: /posts/2020/10/average-final-state/
 tags:
   - optimal control
   - pontryagin
