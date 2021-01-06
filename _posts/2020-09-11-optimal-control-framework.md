@@ -7,13 +7,18 @@ tags:
   - pontryagin
 ---
 
-## The Optimal Control Problem
+# The Optimal Control Problem
 
 This post presents a general framework to address optimal control problems which I found very useful when determining the potential for deriving an analytic solution.
 The notation is chosen to be similar to what appears in I. Michael Ross's book "A Primer on Pontryagin's Principle in Optimal Control".
-Modifications are made which will make the general problem more amenable to numerical solution.
+Modifications are made which will make the general problem more amenable to numerical solution in subsequent posts.
 After presenting the components of the problem, Pontryagin's principle is used to derive a set of necessary conditions for an optimal solution.
 In some special cases, Pontryagin's method is also sufficient and so there is a single global optimal solution.
+
+This post focuses on practical solving and does not present proof.
+If you are interested in the derivations, I recommend the following introductory texts:
+1. 
+2. 
 
 In the formulation presented here, we assume the system can be expressed as \$ n_x \$ ordinary differential equations (ODEs).
 Let the independent parameter, usually time \$ t \$, exist only in the interval \$ \mathcal{I} = [t_0,t_f] \$, where \$ t_0 \$ and \$ t_f \$ may be free variables.
@@ -35,7 +40,7 @@ The boundary cost is denoted \$ E(x(t_0), x(t_f), t_0, t_f)) \$ which assigns a 
 The running cost is denoted \$ F(x(t), u(t), t) \$ which assigns a cost to each value of the state, the control input and time.
 These two functions are again assumed to be at least once differentiable in each of their inputs.
 
-Combining all of these elements into the standard optimal control problem which can be addressed using Pontryagin's principle leads to the following equation:
+Combining all of these elements into the standard optimal control problem which can be addressed using Pontryagin's principle leads to the following:
 
 $$
 \begin{aligned}
@@ -138,3 +143,70 @@ $$
 3. Use the stationarity condition to either (i) express the control input in terms of the states and co-states or (ii) express the switching structure.
 4. First try solving the state / co-state dynamical equations without the constraints and check if the solution violates any of the constraints. If it does not, then the optimal solution has been found! If it does, then 
 
+## Simple Example
+
+To demonstrate the use of the above conditions, let us consider an extremely simple optimal control problem.
+
+$$
+  \begin{aligned}
+    \min && &J = \frac{1}{2} \int_0^{t_f} u^2(t) dt\\
+    \text{s.t.} && &\dot{x}(t) = a x(t) + b u(t)\\
+    && &x(0) = 0, \quad x(t_f) = x_f
+  \end{aligned}
+$$
+
+The bounds on the state and control are assumed large enough so that they are not activated.
+There are no path constraints or non-box event constraints so the Lagrangian of the Hamiltonian is just the Hamiltonian,
+
+$$
+  H = \frac{1}{2} u^2 + a \lambda x + b \lambda u
+$$
+
+The stationarity condition provides the expression of the optimal control input in terms of the co-state,
+
+$$
+  \frac{\partial H}{\partial u} = u + b \lambda = 0 \quad \rightarrow \quad u(t) = - b \lambda(t)
+$$
+
+The dynamics of the co-state are found using the co-state evolution equation,
+
+$$
+  \frac{d \lambda}{dt} = - \frac{\partial H}{\partial x} = - a \lambda(t) \quad \rightarrow \quad \lambda(t) = e^{-a (t-t_f)} \lambda(t_f)
+$$
+
+Note that the choice of the reference value \$ \lambda(t_f) \$ is useful but we could use any other choice, such as, 
+
+$$
+  \lambda(t) = e^{-a t} \lambda(0)
+$$
+
+The control input can now be written in terms of a single unknown parameter,
+
+$$
+  u(t) = - b e^{-a(t-t_f)} \lambda(t_f)
+$$
+
+The time trajectory of the state is,
+
+$$
+  \begin{aligned}
+    x(t) &= e^{a t} x(0) + \int_0^t e^{a(t-\tau)} u(\tau) d\tau\\
+    &= -b \int_0^t e^{a(t+t_f-2\tau)} d\tau \lambda(t_f)
+  \end{aligned}
+$$
+
+Evaluating at the final time allows us to enforce the final state condition,
+
+$$
+  \begin{aligned}
+    x_f &= -b e^{2at_f} \int_0^{t_f} e^{-2a\tau} d\tau \lambda(t_f)\\
+    &= \frac{b}{2a} e^{2at_f} \left( e^{-2at_f} - 1 \right) \lambda(t_f)\\
+    &= \frac{b}{2a} \left(1 - e^{2at_f} \right) \lambda(t_f)
+  \end{aligned}
+$$
+
+Rearranging for the unknown yields,
+
+$$
+  \lambda(t_f) = \frac{2ax_f}{b (1 - e^{2at_f})}
+$$
