@@ -66,7 +66,7 @@ If we were to store this matrix as an \$ n \times m \$ array of booleans which r
 
 As the matrix consists mostly of zeros though, the matrix can be treated as a _sparse matrix_ which stores only non-zero elements.
 Let \$ n_{nz} \$ be the number of nonzero elements in \$ A \$.
-The first approach to storing a sparse matrix is called _triplet form_, which splits the matrix into two integer arrays \$ c \$ and \ r \$ which store the column and row indices of each nonzero element.
+The first approach to storing a sparse matrix is called _triplet form_, which splits the matrix into two integer arrays \$ c \$ and \$ r \$ which store the column and row indices of each nonzero element.
 
 The matrix above is represented in triplet form here:
 
@@ -138,7 +138,7 @@ With this storage scheme, the struct used to store an instance of the setcover p
   } setcover_t;
 ```
 
-#### Parsing SCP Input Files
+### Parsing SCP Input Files
 
 To test the following solution methods the datasets from the paper "An algorithm for set covering problems" by J.E. Beasley are collected from the the paper's author's website.
 
@@ -149,6 +149,13 @@ These instances are stored in files with the following format:
 3. The remainder of the file alternates between lines with a single integer which represents the number of sets in which each element appears and then a series of lines with the corresponding set indices.
 
 In other words, the matrix \$ A \$ is stored in the input files in CSR format.
+
+Reading in a problem instance can be broken into 2 parts: 
+
+1. Parse the input file into `m`, `n`, `w`, and a temporary CSR matrix.
+2. Convert the CSR matrix to a CSC matrix stored in `p` and `r`.
+
+
 
 ### Framed as an Integer Linear Program (ILP)
 
@@ -172,8 +179,143 @@ $$
   \end{aligned}
 $$
 
+#### Using GLPK
+
+The Gnu Linear Programming Kit (GLPK) is a readily available, albeit not the most efficient, linear programming (and integer linear programming) solver.
+GLPK is used to find the exact solution of the ILP form of the SCP written above.
+The exact solution and the time it takes to compute it is used to measure the efficiency of the greedy algorithm.
+The following function is the call to GLPK
+
+
+```c
+  int setcover_ilp (setcover_t *SCP, set_t *C, double *obj) {
+    
+    glp_prob *ILP;      // The datatype used by GLPK
+    int *irow, *jcol;   // Row and column indices for the triplet matrix
+    double *val;        // Values in the triplet matrix
+    int idx, nnz;
+    int retval;
+    
+    // Create the GLPK object
+    ILP = glp_prob_create ();
+    
+    // Set the number of constraints and variables
+    glp_add_rows (ILP, SCP->m);
+    glp_add_cols (ILP, SCP->n);
+    
+    // Define the variables
+    for (int k = 0; k < SCP->n; k++) {
+      glp_set_col_bnds (ILP, k, GLP_DB, 0.0, 1.0);
+      glp_set_obj_coef (ILP, k, SCP->w[k]);
+      glp_set_col_kind (ILP, k, GLP_BV);
+    }
+    
+    // Define the constraints
+    for (int k = 0; k < SCP->m; k++) {
+      glp_set_row_bnds (ILP, k, GLP_LO, 1.0, 0.0);
+    }
+    
+    // Build the constraint matrix in triplet format
+    idx = 1;
+    nnz = SCP->p[SCP->n];
+    irow = (int*) calloc (nnz+1, sizeof(int));
+    jcol = (int*) calloc (nnz+1, sizeof(int));
+    val  = (double*) calloc (nnz+1, sizeof(double));
+    for (int k = 0; k < SCP->n; k++) {
+      for (int j = SCP->p[k]; j < SCP->p[k+1]; j++) {
+        irow[idx] = SCP->r[j];  // Row index
+        jcol[idx] = k;          // Column index
+        val[idx]  = 1.0;        // All nonzeros are = 1
+        idx += 1;               // Increase the counter
+      }
+    }
+    glp_load_matrix (ILP, nnz, irow, jcol, val);
+    
+    // Solve the relaxed LP
+    retval = glp_simplex (ILP, NULL);
+    if (retval != 0) {
+      printf("GLPK failed solving the relaxed LP!\n");
+      free (irow); free (jcol); free (val);
+      return 1;
+    }
+    
+    // Solve the integer program
+    retval = glp_intopt (ILP, NULL);
+    if (retval != 0) {
+      printf("GLPK failed solving the integer program!\n");
+      free (irow); free (jcol); free (val);
+      return 1;
+    }
+    
+    // Load the solution to the output set
+    set_empty (C);
+    for (int k = 0; k < SCP->n; k++) {
+      if (glp_mip_col_val (ILP, k) == 1.0) {
+        set_add (C, k);
+      }
+    }
+    
+    // Get the objective value
+    *obj = glp_mip_obj_val (ILP);
+    
+    // Free local memory
+    free (irow); free (jcol); free (val);
+    return 0;
+  }
+```
 
 
 ### The Greedy Approximation Algorithm
 
+A greedy algorithm is one where a sequence of (easy) optimization problems are solved in a finite number of steps.
+Define the function to maximize (or equivalently minimize) as \$ f : 2^{\mathcal{S}} \mapsto \mathbb{R} \$ so that each step in the greedy algorithm solves the problem,
 
+$$
+  \begin{aligned}
+    \max\limits_{\mathcal{C}^{(k)} \in \bar{\mathcal{C}}(\mathcal{C}^{(k-1)})} && &f(\mathcal{C}^{(k)})\\
+    \text{s.t.} && &\bar{C}(\mathcal{C}^{(k-1)}) \subseteq 2^{\mathcal{S}}
+  \end{aligned}
+$$
+
+The key to solving this problem efficiently is how the set of feasible solutions \$ \bar{\mathcal{C}} \$ is constructed.
+
+For instance, in additive greedy algorithms, the initial set is empty, \$ \mathcal{C}^{(0)} = \emptyset \$, and each subsequent set of feasible solutions is defined as,
+
+$$
+  \bar{\mathcal{C}} (\mathcal{C}^{(k-1)}) = \left\{ \mathcal{C}^{(k)} \subseteq \mathcal{S} | \mathcal{C}^{(k)} = \mathcal{C}^{(k-1)} \cup \{ \ell \}, \ell \in \mathcal{S} \backslash \mathcal{C}^{(k-1)} \right\}
+$$
+
+In subtractive greedy algorithms, the initial set is full, \$ \mathcal{C}^{(0)} = \mathcal{S} \$, and each subsequent set of feasible solutions is defined as,
+
+$$
+  \bar{\mathcal{C}} (\mathcal{C}^{(k-1)}) = \left\{ \mathcal{C}^{(k)} \subset \mathcal{S} | \mathcal{C}^{(k)} = \mathcal{C}^{(k-1)} \backslash \{ \ell \}, \quad \ell \in \mathcal{C}^{(k-1)} \right\}
+$$
+
+Sometimes an additive and subtractive algorithm is useful where each set of feasible solutions consists of all sets after removing or adding an element.
+
+The main point is that \$ \left| \bar{\mathcal{C}} (\mathcal{C}^{(k-1)}) \right| \ll |2^{\mathcal{S}}| \$ ensuring the local optimization problem can be solved using a brute force search.
+
+Along with the function \$ f \$, we define a function \$ g : 2^{\mathcal{S}} \times \mathbb{N} \mapsto \mathbb{R} \$ that represents the exit criteria based on the current set and the iteration index.
+For instance, if we are search for a \$ \mathcal{C} \subseteq \mathcal{S} \$ such that \$ |\mathcal{C}| = \ell \$ with an additive greedy algorithm, then \$ g (\mathcal{C},k) = \ell - |\mathcal{C}| \$ is a good choice.
+Sometimes the exit criteria is solely based on the iteration count so \$ g(\mathcal{C},k) = k^{\max} - k \$.
+
+1. Initialize with \$ \mathcal{C}^{(0)} \$, \$ k = 0 \$.
+2. While \$ g (\mathcal{C}^{(k)},k) \neq 0 \$ 
+ 1. Set jstar = -1 and fstar = 0.0
+ 2. Iterate over all \$ \mathcal{C}'_j \in \bar{\mathcal{C}}^{(k)} \$ 
+  1. If \$ f(\mathcal{C}'_j) > fstar \$ set jstar = j and fstar = \$ f(\mathcal{C}'_j) \$
+ 3. If \$ j^* = -1 \$, then no improvement was found and we break out of the while loop.
+ 4. Update \$ \mathcal{C}^{(k)} \gets \mathcal{C}'_{j^*} \$ and \$ k \gets k+1 \$
+3. Return \$ \mathcal{C} \gets \mathcal{C}^{(k)} \$ 
+
+```c
+  int setcover_greedy (setcover_t *SCP, set_t *C) {
+    
+    int jstar;
+    double fstar;
+    set_t U;
+    
+    
+    return 0;
+  }
+```
