@@ -20,17 +20,43 @@ I will solve it 3 ways:
 
 Along with the above topics, a discussion of efficient storage of sparse matrices, a description of approximation of algorithms, and an introduction to programming with MPI.
 
+## Motivation
+
+A hospital needs to select some doctors to be on call for an ER who are capable of performing any common required treatment (bone setting, stitches, trauma surgery, etc).
+Each doctor is capable of performing some of these tasks but not all of them. The hospital wishes to staff the ER such that there will be a doctor on call capable of performing any required treatment while not demanding too many unpopular on call shifts incurring unnecessary costs. 
+
+A new distribution company needs to select sites to build their storage facilities such that each populated area of interest is within 2 day's travel.
+
+You want to construct a surveillance system in a building with cameras watching every hallway such that the number of cameras is minimum.
+
+The common trait of these problems is a set of statements which must be true (any treatment can be performed, every population center is within 2 days of a distribution center, every hallway surveilled) and a set of resources from which we can make our selection.
+Each resource fulfills some of the requirements making some of the statements true, and we must continue to select resources until all of them are true.
+
+These are the hallmarks of a _set cover problem_ which is discussed in this post.
+
+Beyond these small examples, the set cover problem appears as a step in a large number of data analysis tools which can lead to enormous problem instances with thousands or millions of variables.
+
 ## The Set Cover Problem (SCP)
 
-Let \$ \mathcal{U} = \{0,1,\ldots,m-1\} \$ be the _universe_ consisting of \$ m \$ elements, generically indexed starting from 0. There exists a set of subsets,
+The _universe_ consists of \$ m \$ elements denoted
+
+$$
+  \mathcal{U} = \left\{ 0,1,\ldots,m-1 \right\}
+$$
+
+These are the therapies in the hospital example, the populated areas in the distribution center example, or the hallways in the surveillance example.
+
+The potential resources are defined by the following set of sets,
 
 $$
   \mathcal{S} = \left\{ \mathcal{S}_j \subseteq \mathcal{U} | j = 0,1,\ldots,n-1 \right\}
 $$
 
-Along with each subset \$ \mathcal{S}_j \$ there is a positive weight assigned, \$ w : \mathcal{S} \mapsto \mathbb{R}^+ \$, with the notation convention \$ w(\mathcal{S}_j) = w_j \$.
+Each set \$ \mathcal{S}_j \$ represents the set of treatments the j'th doctor could perform, or the set of populated areas a potential facility location could provide for, or the hallways capable of being surveilled by a potential camera location.
 
-The SCP attempts to find the subset \$ \mathcal{C} \subseteq \mathcal{S} \$ such that each element \$ \ell \in \mathcal{U} \$ appears in at least one set \$ \mathcal{S}_j \in \mathcal{C} \$ that minimizes the cost \$ \sum_{\mathcal{S}_j \in \mathcal{C}} w_j \$.
+There is some cost associated with each selection, defined as \$ w : \mathcal{S}_j \mapsto \mathbb{R}^+ \$, or \$ w(\mathcal{S}_j) = w_j \$ for convenience.
+
+The SCP attempts to find the subset \$ \mathcal{C} \subseteq \mathcal{S} \$ such that each element \$ \ell \in \mathcal{U} \$ appears in at least one of the subsets in \$ \mathcal{C} \$.
 
 ### Storage Scheme for the SCP
 
@@ -42,10 +68,10 @@ For a concrete example consider the case \$ m = 6 \$ and \$ n = 8 \$ with sets
 
 $$
   \begin{aligned}
-    \mathcal{S}_0 = \{0,3\} && \mathcal{S}_1 = \{0,1\}\\
-    \mathcal{S}_2 = \{0,4,5\} && \mathcal{S}_3 = \{2\}\\
-    \mathcal{S}_4 = \{1,2,4\} && \mathcal{S}_5 = \{1,5\}\\
-    \mathcal{S}_6 = \{0,2\} && \mathcal{S}_7 = \{3,4\}
+    \mathcal{S}_0 &= \{0,3\} && \mathcal{S}_1 = \{0,1\}\\
+    \mathcal{S}_2 &= \{0,4,5\} && \mathcal{S}_3 = \{2\}\\
+    \mathcal{S}_4 &= \{1,2,4\} && \mathcal{S}_5 = \{1,5\}\\
+    \mathcal{S}_6 &= \{0,2\} && \mathcal{S}_7 = \{3,4\}
   \end{aligned}
 $$
 
@@ -80,17 +106,17 @@ $$
   \end{aligned}
 $$
 
-The amount of storage is now 2 \$ n_{nz} \$ arrays of integers, which I assume require 4 bytes each so the total storage if \$ 8 n_{nz} \$ bytes.
+The amount of storage is now two  \$ n_{nz} \$ arrays of integers, which I assume require 4 bytes each so the total storage is \$ 8 n_{nz} \$ bytes.
 For this storage scheme to be efficient, it should require less than the dense boolean matrix,
 
 $$
   8 n_{nz} < nm \quad \rightarrow \quad n_{nz} < \frac{nm}{8}
 $$
 
-or in words, the sparsity of the matrix should be less than an eighth.
+that is, the sparsity of the matrix should be less than an eighth.
 
 The triplet format is good for iterating over the elements, but note that arbitrarily, iterating over the rows or columns require searching for the corresponding indices in either \$ r \$ or \$ c \$.
-The triplet format written above is already sorted by rows which suggests a further improvement in storage.
+The triplet format written above is already sorted by rows which suggests a further memory reduction in storage.
 
 Compressed Sparse Row (CSR) format compresses the \$ r \$ array into just information about the starting elements in \$ c \$, often called the pointers to each row (do not confuse this with pointers in the c programming language).
 
@@ -126,7 +152,7 @@ For instance, using the CSC storage scheme allows us to efficiently loop over th
   }
 ```
 
-With this storage scheme, the struct used to store an instance of the setcover problem can be defined,
+With this storage scheme, the structure used to store an instance of an SCP can be defined,
 
 ```c
   typedef struct {
