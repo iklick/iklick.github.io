@@ -335,13 +335,60 @@ Sometimes the exit criteria is solely based on the iteration count so \$ g(\math
 3. Return \$ \mathcal{C} \gets \mathcal{C}^{(k)} \$ 
 
 ```c
-  int setcover_greedy (setcover_t *SCP, set_t *C) {
+  int setcover_greedy (setcover_t *SCP, set_t *C, double *obj) {
     
-    int jstar;
-    double fstar;
-    set_t U;
+    set_t E;
+    double cost_best;
+    double cost_j;
+    int j;
+    int selected_j;
+    int *Sj;
     
+    // Ensure proper initial state for C
+    set_resize (C, SCP->n);
+    set_remove_all (C);
     
+    // Local storage keeps track of which elements are uncovered
+    set_init (&E, SCP->m);
+    set_add_all (&E);
+    
+    // Initial objective is 0
+    *obj = 0.0;
+    
+    // While there are uncovered elements in the universe...
+    while (!set_is_empty (&E)) {
+      
+      // Re-initialize the best found solution
+      cost_best = 0.0;
+      selected_j = -1;
+      
+      for (j = 0; j < SCP->n; j++) {
+        if (!set_is_in (C, j)) {
+        
+          // Compute the cost to add Sj
+          Sj = setcover_get_set (SCP, j);
+          cost = (double) set_card_intersect_with_array (&E, Sj);
+          cost /= setcover_get_weight (SCP, j);
+          
+          // If this cost is bigger, set it as the current winner
+          if (cost > cost_best) {
+            cost_best = cost;
+            selected_j = j;
+          }
+        }
+      }
+      
+      // Take the best found set and add it
+      set_add (C, selected_j);
+      Sj = setcover_get_set (SCP, selected_j);
+      set_remove_some (&E, Sj);
+      *obj += setcover_get_weight (SCP, j);
+      
+    }
+    
+    set_free (&E);
     return 0;
   }
 ```
+
+<img src="/images/scp_comparison.png" alt="Comparison" align="center" />
