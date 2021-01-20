@@ -1,7 +1,7 @@
 ---
 title: 'A Greedy Algorithm in Parallel using MPI'
 date: 2021-01-04
-permalink: /posts/2021/01/set-over-in-parallel/
+permalink: /posts/2021/01/set-cover-in-parallel/
 tags:
   - Combinatorial Optimization
   - MPI
@@ -14,39 +14,45 @@ tags:
 This post addresses the well known Set Cover Problem, one of Karp's original 21 NP-complete problems.
 I will solve it 3 ways:
 
-1. Finding an exact solution using GLPK
-2. Approximately solving it with a greedy algorithm on a single processor
-3. Approximately solving it with a parallel greedy algorithm using MPI
+1. Finding an **exact solution** using GLPK
+2. **Approximately solving** it with a greedy algorithm on a single processor
+3. **Approximately solving** it with a parallel greedy algorithm using MPI
 
-Along with the above topics, a discussion of efficient storage of sparse matrices, a description of approximation of algorithms, and an introduction to programming with MPI.
+Along with the above topics, a discussion of efficient storage of sparse matrices, a description of approximation algorithms, and an introduction to programming with MPI.
 
 ## Motivation
 
-A hospital needs to select some doctors to be on call for an ER who are capable of performing any common required treatment (bone setting, stitches, trauma surgery, etc).
+{: .box-warning}
+**Example 1: Staffing an Emergency Room**<br /> A hospital needs to select some doctors to be on call for an ER who are capable of performing any common required treatment (bone setting, stitches, trauma surgery, etc).
 Each doctor is capable of performing some of these tasks but not all of them. The hospital wishes to staff the ER such that there will be a doctor on call capable of performing any required treatment while not demanding too many unpopular on call shifts incurring unnecessary costs. 
 
+{: .box-warning}
+**Example 2: Building Distribution Centers**<br />
 A new distribution company needs to select sites to build their storage facilities such that each populated area of interest is within 2 day's travel.
 
+{: .box-warning}
+**Example 3: Surveilling a Building**<br />
 You want to construct a surveillance system in a building with cameras watching every hallway such that the number of cameras is minimum.
 
-The common trait of these problems is a set of statements which must be true (any treatment can be performed, every population center is within 2 days of a distribution center, every hallway surveilled) and a set of resources from which we can make our selection.
-Each resource fulfills some of the requirements making some of the statements true, and we must continue to select resources until all of them are true.
+The common trait of these problems is a __set of statements__ which must be true (any treatment can be performed, every population center is within 2 days of a distribution center, every hallway is surveilled) and a __set of resources__ from which we can make our selection (all employed doctors at the hospital, potential sites for storage facilities, hallway corners that could host a camera).
+Each resource fulfills some of the requirements (making some of the statements true) and so we must select a __subset of the resources__ to make them all true.
 
-These are the hallmarks of a _set cover problem_ which is discussed in this post.
+These are the hallmarks of a **set cover problem** which is discussed in this post.
 
-Beyond these small examples, the set cover problem appears as a step in a large number of data analysis tools which can lead to enormous problem instances with thousands or millions of variables.
+Beyond the above small examples, the set cover problem appears as a step in a large number of data analysis tools often leading to enormous problem instances with thousands or millions of variables.
 
 ## The Set Cover Problem (SCP)
 
-The _universe_ consists of \$ m \$ elements denoted
+The components of a SCP are
 
-$$
-  \mathcal{U} = \left\{ 0,1,\ldots,m-1 \right\}
-$$
+1. The **universe** consists of \$ m \$ elements denoted
 
-These are the therapies in the hospital example, the populated areas in the distribution center example, or the hallways in the surveillance example.
+    $$
+      \mathcal{U} = \left\{ 0,1,\ldots,m-1 \right\}
+    $$
 
-The potential resources are defined by the following set of sets,
+    These are the therapies in the hospital example, the populated areas in the distribution center example, or the hallways in the surveillance example.
+2. The set of resources is defined as a set of subsets of the universe,
 
 $$
   \mathcal{S} = \left\{ \mathcal{S}_j \subseteq \mathcal{U} | j = 0,1,\ldots,n-1 \right\}
@@ -56,13 +62,17 @@ Each set \$ \mathcal{S}_j \$ represents the set of treatments the j'th doctor co
 
 There is some cost associated with each selection, defined as \$ w : \mathcal{S}_j \mapsto \mathbb{R}^+ \$, or \$ w(\mathcal{S}_j) = w_j \$ for convenience.
 
-The SCP attempts to find the subset \$ \mathcal{C} \subseteq \mathcal{S} \$ such that each element \$ \ell \in \mathcal{U} \$ appears in at least one of the subsets in \$ \mathcal{C} \$.
+The SCP attempts to find the subset \$ \mathcal{C} \subseteq \mathcal{S} \$ such that each element \$ \ell \in \mathcal{U} \$ appears in at least one of the subsets in \$ \mathcal{C} \$ that has **minimal weight**
+
+$$
+  cost = \sum_{\mathcal{S}_j \in \mathcal{C}} w(\mathcal{S}_j)
+$$
 
 ### Storage Scheme for the SCP
 
 The data required to represent an instance of the SCP is the size of the universe \$ m \$, the number of sets in \$ \mathcal{S} \$, \$ n \$, the sets themselves, \$ \mathcal{S}_j \$, and the weights, \$ w_j \$.
 
-To store the sets \$ \mathcal{S}_j \in \mathcal{S} \$, note that we could create a matrix \$ A \in \{0,1\}^{m \times n} \$ (a matrix of ones and zeros) where each row corresponds to an element in the universe \$ \mathcal{U} \$ and each column corresponds to a set in \$ \mathcal{S} \$.
+To store the sets \$ \mathcal{S}_j \in \mathcal{S} \$, note that we could create a matrix $$ A \in \{ 0,1 \}^{m \times n} $$ (a matrix of ones and zeros) where each row corresponds to an element in the universe \$ \mathcal{U} \$ and each column corresponds to a set in \$ \mathcal{S} \$.
 
 For a concrete example consider the case \$ m = 6 \$ and \$ n = 8 \$ with sets
 
@@ -88,25 +98,25 @@ $$
   \end{array} \right]
 $$
 
-If we were to store this matrix as an \$ n \times m \$ array of booleans which require 1 byte each, then (ignoring overhead) the matrix would require \$ nm \$ bytes to store.
+If we were to store this matrix as an $$ n \times m $$ array of booleans which require 1 byte each, then (ignoring overhead) the matrix would require \$ nm \$ bytes to store.
 
-As the matrix consists mostly of zeros though, the matrix can be treated as a _sparse matrix_ which stores only non-zero elements.
-Let \$ n_{nz} \$ be the number of nonzero elements in \$ A \$.
-The first approach to storing a sparse matrix is called _triplet form_, which splits the matrix into two integer arrays \$ c \$ and \$ r \$ which store the column and row indices of each nonzero element.
+As the matrix consists __mostly of zeros__, it can be treated as a __sparse matrix__ which stores only the non-zero elements.
+Let $$ n_{nz} $$ be the number of nonzero elements in $$ A $$.
+The first approach to storing a sparse matrix is called __triplet form__, which splits the matrix into two integer arrays $$ \textbf{c} $$ and $$ \textbf{r} $$ which store the column and row indices of each nonzero element.
 
 The matrix above is represented in triplet form here:
 
 $$
   \begin{aligned}
-    r = \left[ \begin{array}{c}
+    \textbf{r} = \left[ \begin{array}{c}
       0 \\ 0 \\ 0 \\ 0 \\ 1 \\ 1 \\ 1 \\ 2 \\ 2 \\ 2 \\ 3 \\ 3 \\ 4 \\ 4 \\ 4 \\ 5 \\ 5
-    \end{array} \right] && c = \left[ \begin{array}{c}
+    \end{array} \right] && \textbf{c} = \left[ \begin{array}{c}
       0 \\ 1 \\ 2 \\ 6 \\ 1 \\ 4 \\ 5 \\ 4 \\ 5 \\ 6 \\ 0 \\ 7 \\ 2 \\ 4 \\ 7 \\ 2 \\ 5
     \end{array} \right]
   \end{aligned}
 $$
 
-The amount of storage is now two  \$ n_{nz} \$ arrays of integers, which I assume require 4 bytes each so the total storage is \$ 8 n_{nz} \$ bytes.
+The amount of storage is now two  $$ n_{nz} $$ arrays of integers, which I assume require 4 bytes each so the total storage is $$ 8 n_{nz} $$ bytes.
 For this storage scheme to be efficient, it should require less than the dense boolean matrix,
 
 $$
@@ -115,10 +125,19 @@ $$
 
 that is, the sparsity of the matrix should be less than an eighth.
 
-The triplet format is good for iterating over the elements, but note that arbitrarily, iterating over the rows or columns require searching for the corresponding indices in either \$ r \$ or \$ c \$.
-The triplet format written above is already sorted by rows which suggests a further memory reduction in storage.
+The triplet format is good for iterating over the non-zero elements.
 
-Compressed Sparse Row (CSR) format compresses the \$ r \$ array into just information about the starting elements in \$ c \$, often called the pointers to each row (do not confuse this with pointers in the c programming language).
+```c
+  int j, rj, cj;
+  for (j = 0; j < nnz; j++) {
+    rj = r[j];  // The row index
+    cj = c[j];  // The column index
+  }
+```
+
+The triplet format is not good for iterating over the rows or columns.
+
+Compressed Sparse Row (CSR) format compresses the $$ \textbf{r} $$ array into just the information about the first elements in $$ \textbf{c} $$ of each row, often called the pointers to each row (do not confuse this with pointers in the c programming language).
 
 $$
   \begin{aligned}
@@ -129,6 +148,19 @@ $$
     \end{array} \right]
   \end{aligned}
 $$ 
+
+This allows iterating over the rows efficiently.
+
+```c
+  int rj, *cidx, k;
+  for (rj = 0; rj < n; rj++) {
+    for (k = p[rj]; k < p[rj]; k++) {
+      cidx = &c[k]; // This is a pointer to the nonzero elems in the rj'th row
+    }
+  }
+```
+
+The number of nonzeros in each row can also be determined with `p[k+1]-p[k]`.
 
 Similarly, the Compressed Sparse Column (CSC) format compresses the \$ c \$ array in a similar fashion.
 
@@ -142,25 +174,18 @@ $$
   \end{aligned}
 $$
 
-The CSR and CSC storage schemes are useful if we need to operate on the nonzero rows or columns of \$ A \$, respectively.
-For instance, using the CSC storage scheme allows us to efficiently loop over the columns in \$ A \$, which represent the sets in \$ \mathcal{S} \$.
-
-```c
-  for (int j = 0; j < n; j++) {
-    int nj  = p[j+1] - p[j];  // number of elements in Sj
-    int *Sj = &r[j];          // pointer to the elements in Sj
-  }
-```
+The CSR and CSC storage schemes are useful if we need to operate on the nonzero rows or columns of $$ A $$, respectively.
+For instance, using the CSC storage scheme allows us to efficiently loop over the columns in $$ A $$, which represent the sets in $$ \mathcal{S} $$.
 
 With this storage scheme, the structure used to store an instance of an SCP can be defined,
 
 ```c
   typedef struct {
-    int     m;  // Size of the universe
-    int     n;  // Number of sets
-    double *w;  // Weights for each set
-    int    *p;  // Pointer to starting index of each set in r
-    int    *r;  // Linear array for each of the sets
+    int     m;    // Size of the universe
+    int     n;    // Number of sets
+    double *wts;  // Weights for each set
+    int    *ptr;  // Pointer to starting index of each set in r
+    int    *set;  // Linear array for each of the sets
   } setcover_t;
 ```
 
@@ -178,12 +203,12 @@ In other words, the matrix \$ A \$ is stored in the input files in CSR format.
 
 Reading in a problem instance can be broken into 2 parts: 
 
-1. Parse the input file into `m`, `n`, `w`, and a temporary CSR matrix.
-2. Convert the CSR matrix to a CSC matrix stored in `p` and `r`.
+1. Parse the input file into `m`, `n`, `wts`, and a temporary CSR matrix.
+2. Convert the CSR matrix to a CSC matrix stored in `ptr` and `set`.
 
 
 
-### Framed as an Integer Linear Program (ILP)
+### SCP as an Integer Linear Program (ILP)
 
 The SCP can efficiently be expressed as an ILP by defining the boolean variables \$ x_j \$, \$ j = 0,1,\ldots,n-1 \$, where
 
