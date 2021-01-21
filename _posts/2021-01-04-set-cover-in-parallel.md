@@ -45,7 +45,7 @@ Beyond the above small examples, the set cover problem appears as a step in a la
 
 The components of a SCP are
 
-1. The **universe** consists of \$ m \$ elements denoted
+1. The **universe** consists of $$ m $$ elements denoted
 
     $$
       \mathcal{U} = \left\{ 0,1,\ldots,m-1 \right\}
@@ -58,23 +58,31 @@ $$
   \mathcal{S} = \left\{ \mathcal{S}_j \subseteq \mathcal{U} | j = 0,1,\ldots,n-1 \right\}
 $$
 
-Each set \$ \mathcal{S}_j \$ represents the set of treatments the j'th doctor could perform, or the set of populated areas a potential facility location could provide for, or the hallways capable of being surveilled by a potential camera location.
+Each set $$ \mathcal{S}_j $$ represents the set of treatments the j'th doctor could perform, or the set of populated areas a potential facility location could provide for, or the hallways capable of being surveilled by a potential camera location.
 
-There is some cost associated with each selection, defined as \$ w : \mathcal{S}_j \mapsto \mathbb{R}^+ \$, or \$ w(\mathcal{S}_j) = w_j \$ for convenience.
+There is some cost associated with each selection, defined as $$ w : \mathcal{S}_j \mapsto \mathbb{R}^+ $$, or $$ w(\mathcal{S}_j) = w_j $$ for convenience.
 
-The SCP attempts to find the subset \$ \mathcal{C} \subseteq \mathcal{S} \$ such that each element \$ \ell \in \mathcal{U} \$ appears in at least one of the subsets in \$ \mathcal{C} \$ that has **minimal weight**
+These weights could be thought of as costs, for instance salary of each ER doctor, cost of the land for each distribution center, or the cost of installing cameras and wiring for each potential camera location.
+
+The SCP attempts to find the subset $$ \mathcal{C} \subseteq \mathcal{S} $$ such that each element $$ \ell \in \mathcal{U} $$ appears in at least one of the subsets in $$ \mathcal{C} $$ that has **minimal cost**,
 
 $$
   cost = \sum_{\mathcal{S}_j \in \mathcal{C}} w(\mathcal{S}_j)
 $$
 
+This cost quantifies every subset $$ \mathcal{C} \subseteq \mathcal{S} $$.
+
 ### Storage Scheme for the SCP
 
-The data required to represent an instance of the SCP is the size of the universe \$ m \$, the number of sets in \$ \mathcal{S} \$, \$ n \$, the sets themselves, \$ \mathcal{S}_j \$, and the weights, \$ w_j \$.
+The data required to represent an instance of the SCP is the size of the universe $$ m $$, the number of sets in $$ \mathcal{S} $$, $$ n $$, the sets themselves, $$ \mathcal{S}_j $$, $$ j = 0,1,\ldots,n-1 $$ and the weights, $$ w_j $$, $$ j = 0,1,\ldots,n-1 $$.
 
-To store the sets \$ \mathcal{S}_j \in \mathcal{S} \$, note that we could create a matrix $$ A \in \{ 0,1 \}^{m \times n} $$ (a matrix of ones and zeros) where each row corresponds to an element in the universe \$ \mathcal{U} \$ and each column corresponds to a set in \$ \mathcal{S} \$.
+The sets $$ \mathcal{S}_j \in \mathcal{S} $$ can be considered as a matrix $$ A \in \{0,1\}^{m \times n} $$ (a matrix consisting of 0s and 1s) where
 
-For a concrete example consider the case \$ m = 6 \$ and \$ n = 8 \$ with sets
+$$
+  A_{i,j} = \left\{ \begin{array}{ll} 1 & \text{if } i \in \mathcal{S}_j\\ 0 & \text{otherwise} \end{array} \right.
+$$
+
+For a concrete example consider the case $$ m = 6 $$ and $$ n = 8 $$ with sets
 
 $$
   \begin{aligned}
@@ -98,11 +106,11 @@ $$
   \end{array} \right]
 $$
 
-If we were to store this matrix as an $$ n \times m $$ array of booleans which require 1 byte each, then (ignoring overhead) the matrix would require \$ nm \$ bytes to store.
+If we were to store this matrix as an $$ n \times m $$ array of booleans which require 1 byte each, then (ignoring overhead) the matrix would require $$ n \times m $$ bytes to store.
 
-As the matrix consists __mostly of zeros__, it can be treated as a __sparse matrix__ which stores only the non-zero elements.
+As the matrix consists __mostly of zeros__, it can be treated as a __sparse matrix__ which stores only the locations of the non-zero elements.
 Let $$ n_{nz} $$ be the number of nonzero elements in $$ A $$.
-The first approach to storing a sparse matrix is called __triplet form__, which splits the matrix into two integer arrays $$ \textbf{c} $$ and $$ \textbf{r} $$ which store the column and row indices of each nonzero element.
+One choice is to store just the row and column indices of the nonzeros, called __triplet form__.
 
 The matrix above is represented in triplet form here:
 
@@ -125,7 +133,7 @@ $$
 
 that is, the sparsity of the matrix should be less than an eighth.
 
-The triplet format is good for iterating over the non-zero elements.
+The triplet format is useful when only iterating over the non-zero elements.
 
 ```c
   int j, rj, cj;
@@ -162,7 +170,7 @@ This allows iterating over the rows efficiently.
 
 The number of nonzeros in each row can also be determined with `p[k+1]-p[k]`.
 
-Similarly, the Compressed Sparse Column (CSC) format compresses the \$ c \$ array in a similar fashion.
+Similarly, the Compressed Sparse Column (CSC) format compresses the $$ \textbf{c} $$ array in a similar fashion.
 
 $$
   \begin{aligned}
@@ -176,6 +184,14 @@ $$
 
 The CSR and CSC storage schemes are useful if we need to operate on the nonzero rows or columns of $$ A $$, respectively.
 For instance, using the CSC storage scheme allows us to efficiently loop over the columns in $$ A $$, which represent the sets in $$ \mathcal{S} $$.
+
+```c
+  int j, *Sj, nj;
+  for (j = 0; j < n; j++) {
+    nj = p[j+1] - p[j];  // Number of elements in the j'th set
+    Sj = &r[p[j]];       // The j'th set
+  }
+```
 
 With this storage scheme, the structure used to store an instance of an SCP can be defined,
 
@@ -210,7 +226,7 @@ Reading in a problem instance can be broken into 2 parts:
 
 ### SCP as an Integer Linear Program (ILP)
 
-The SCP can efficiently be expressed as an ILP by defining the boolean variables \$ x_j \$, \$ j = 0,1,\ldots,n-1 \$, where
+The SCP can efficiently be expressed as an ILP by defining the boolean variables $$ x_j $$, $$ j = 0,1,\ldots,n-1 $$, where
 
 $$
   x_j = \left\{ \begin{array}{ll}
