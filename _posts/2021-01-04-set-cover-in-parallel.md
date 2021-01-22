@@ -335,7 +335,12 @@ The following function is the call to GLPK
 ### The Greedy Approximation Algorithm
 
 A greedy algorithm is one where a sequence of (easy) optimization problems are solved in a finite number of steps.
-Define the function to maximize (or equivalently minimize) as \$ f : 2^{\mathcal{S}} \mapsto \mathbb{R} \$ so that each step in the greedy algorithm solves the problem,
+
+Before describing it though, some notation must be presented.
+
+Let $$ \mathcal{C} \subseteq \mathcal{S} $$ 
+
+Define the function to maximize (or equivalently minimize) as $$ f : 2^{\mathcal{S}} \mapsto \mathbb{R} $$ so that each step in the greedy algorithm solves the problem,
 
 $$
   \begin{aligned}
