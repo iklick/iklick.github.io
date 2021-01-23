@@ -338,7 +338,16 @@ A greedy algorithm is one where a sequence of (easy) optimization problems are s
 
 Before describing it though, some notation must be presented.
 
-Let $$ \mathcal{C} \subseteq \mathcal{S} $$ 
+Let $$ \mathcal{S} $$ be a set and $$ P(\mathcal{S}) = 2^{\mathcal{S}} $$ be its power set.
+Let $$ \mathcal{C} \in P(\mathcal{S}) $$ be a subset.
+Finally, we define a function $$ h : P(\mathcal{S}) \mapsto 2^{P(\mathcal{S})} $$, that is, a function that maps a subset of $$ \mathcal{S} $$ to a set of subsets of $$ \mathcal{S} $$.
+
+This is quite confusing stated formally, but with examples the idea will become clear.
+
+{: .box-warning}
+**Example: Additive Greedy Algorithm**
+Let $$ \mathcal{S} = \{ 0,1,\ldots,n-1 \} $$ so $$ |\mathcal{S}| = n $$, and let $$ \mathcal{C} \subset \mathcal{S} $$.
+For an additive greedy algorithm, define $$ h(\mathcal{C}) = \{ \mathcal{C} \cup \{ \ell \} | \ell \in \mathcal{S} \backslash \mathcal{C} \} $$, that is, the set $$ \mathcal{C} $$ augmented by one element in $$ \mathcal{S} $$ not already in $$ \mathcal{C} $$. 
 
 Define the function to maximize (or equivalently minimize) as $$ f : 2^{\mathcal{S}} \mapsto \mathbb{R} $$ so that each step in the greedy algorithm solves the problem,
 
