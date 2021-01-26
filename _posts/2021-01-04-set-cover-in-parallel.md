@@ -349,6 +349,14 @@ This is quite confusing stated formally, but with examples the idea will become 
 Let $$ \mathcal{S} = \{ 0,1,\ldots,n-1 \} $$ so $$ |\mathcal{S}| = n $$, and let $$ \mathcal{C} \subset \mathcal{S} $$.
 For an additive greedy algorithm, define $$ h(\mathcal{C}) = \{ \mathcal{C} \cup \{ \ell \} | \ell \in \mathcal{S} \backslash \mathcal{C} \} $$, that is, the set $$ \mathcal{C} $$ augmented by one element in $$ \mathcal{S} $$ not already in $$ \mathcal{C} $$. 
 
+{: .box-warning}
+**Example: Subtractive Greedy Algorithm**
+Let $$ \mathcal{S} $$ and $$ \mathcal{C} $$ be defined as in the previous example.
+In a subtractive greedy algorithm $$ h(\mathcal{C}) = \{ \mathcal{C} - \{ \ell \} | \ell \in \mathcal{C} \} $$, that is, the set of all subsets created by removing a single element from $$ \mathcal{C} $$.
+
+{: .box-warning}
+**Example: 
+
 Define the function to maximize (or equivalently minimize) as $$ f : 2^{\mathcal{S}} \mapsto \mathbb{R} $$ so that each step in the greedy algorithm solves the problem,
 
 $$
