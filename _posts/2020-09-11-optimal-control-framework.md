@@ -9,7 +9,7 @@ tags:
 
 # The Optimal Control Problem
 
-This post presents a general framework to address optimal control problems which I found very useful when determining the potential for deriving an analytic solution.
+This post presents a general framework to address optimal control problems which I found very useful during graduate school.
 The notation is chosen to be similar to what appears in I. Michael Ross's book "A Primer on Pontryagin's Principle in Optimal Control".
 Modifications are made which will make the general problem more amenable to numerical solution in subsequent posts.
 After presenting the components of the problem, Pontryagin's principle is used to derive a set of necessary conditions for an optimal solution.
