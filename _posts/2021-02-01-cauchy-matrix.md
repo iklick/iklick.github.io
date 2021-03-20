@@ -1,6 +1,6 @@
 ---
 layout: single
-title:  "Case Study: Cauchy Matrix"
+title:  "Phantom Plateaus: A Study "
 date: 2021-02-01
 permalink: /posts/2021/02/cauchy-matrix/
 header:
@@ -15,63 +15,44 @@ tags:
 
 # A Plateau-ing Curve
 
-In graduate school, I was shown a figure generated like the one below.
+In graduate school, I was shown a figure that looked like the one below.
 
-{% include image.html max-width="500px" file="/images/cauchy-doubleprec.png" alt="/images/500x300.png" caption="Control energy growth decreases with uncertainty." %}
+{% include image.html 
+  max-width="500px" 
+  file="/images/cauchy-doubleprec.png" 
+  alt="/images/500x300.png" 
+  caption="Control energy growth decreases with uncertainty." %}
 
-The y-axis shows the average and standard deviation of the control energy arising from a particular optimal control problem,
+The y-axis shows the average and standard deviation of the cost arising from a particular optimal control problem,
 
 $$
   E(n) = \textbf{1}_n^T W^{-1} \textbf{1}_n
 $$
 
-where $$ n $$ is the number of systems, $$ \textbf{1}_n $$ is a vector of all ones of length $$ n $$ and $$ W $$ is a square $$ n $$-by-$$ n $$ matrix drawn from a probability distribution.
+where $$ \textbf{1}_n $$ is a vector of all ones of length $$ n $$, $$ W $$ is a square $$ n $$-by-$$ n $$ matrix with entries
 
-<details>
-  <summary><b>Why is this equation called Control Energy?</b></summary>
-  This matrix arises from an optimal control problem.
-  
-  $$
-    \begin{aligned}
-      \min && &\frac{1}{2} \int_0^{t_f} u^2(t) dt\\
-      \text{s.t.} && &\dot{x}_k(t) = -a_k x_k(t) + u(t), \quad k = 1,2,\ldots,n\\
-      && &x_k(0) = 0, \quad x_k(t_f) = 1
-    \end{aligned}
-  $$
-  
-  The values $$ a_k $$ is drawn from some probability distribution that is strictly positive.
-  This problem represents the optimal control of a collection of stable single integrator systems.
-  The control energy is defined as,
-  
-  $$
-    E = \int_0^{t_f} u^2(t) dt 
-  $$
-  
-  which is useful to represent the amount of <i>effort</i> required by a particular control signal to perform a task.
-  
-  The control energy to satisfy the contraints in this optimal control problem is lower bounded by its solution,
-  
-  $$
-    E \geq E^* = \textbf{1}^T_n W^{-1} \textbf{1}_n
-  $$
-  
-  where the matrix $$ W $$ has elements 
-  
-  $$
-    W_{j,k} = \frac{1}{a_j+a_k}
-  $$
-  
-  This can be proven using Pontryagin's Minimum Principle which is beyond the scope of this post but is presented in detail in other posts.
-  <hr size="5" noshade>
-</details>
+$$
+  W_{j,k} = \frac{1}{a_j + a_k}, \quad j,k = 1,2,\ldots,n
+$$
 
-The figure seems to show that, for at least the probability distribution used to generate the data, as the number of systems grows, the rate of energy growth seems to slow down.
+and the values $$ a_j $$ are drawn from some, strictly positive, probability distribution. As an example, if $$ n = 3 $$, the matrix $$ W $$ is,
+
+$$
+  W = \left[ \begin{array}{ccc}
+    \frac{1}{2a_1} & \frac{1}{a_1+a_2} & \frac{1}{a_1+a_3}\\
+    \frac{1}{a_2+a_1} & \frac{1}{2a_2} & \frac{1}{a_2+a_3}\\
+    \frac{1}{a_3+a_1} & \frac{1}{a_3+a_2} & \frac{1}{2a_3}
+  \end{array} \right]
+$$
+
+
+The figure seems to show that as the dimension of the matrix, $$ n $$, increases, the rate of growth of $$ E(n) $$ seems to decrease, or plateaus.
 
 This was a surprising result! But it was also slightly suspicious.
 
 ## Analytic Investigation
 
-The matrix $$ W $$ that appears in this control energy expression is a __Cauchy matrix__.
+To start, the matrix $$ W $$ is a special type of matrix called a __Cauchy matrix__.
 
 {% 
   include definition.html 
@@ -476,13 +457,9 @@ The proof of this is not straightforward and requires a fair amount of prelimina
   <hr size="5" noshade>
 </details>
 
-The matrix $$ W $$ that appears in the control energy expression has elements,
+<br><br>
 
-$$
-  W_{j,k} = \frac{1}{a_j + a_k}
-$$
-
-which is a Cauchy matrix by defining $$ x_j = a_j $$ and $$ y_j = -a_j $$ so that the control energy is,
+Using the identity for the sum of the entries of the inverse Cauchy matrix, the expression for $$ E(n) $$ can be simplified to just a single summation.
 
 $$
   E(n) = 2 \sum_{j=1}^n a_j
@@ -500,7 +477,7 @@ and the variance is $$ \sigma^2 = 4n $$.
 
 {% include image.html max-width="500px" file="/images/cauchy-analytic.png" alt="/images/500x300.png" caption="Numerical vs. Analytic Energy Growth. The purple curve is the same as in the first figure while the blue line plots the mean and standard deviation " %}
 
-So what happened? Why did the code fail to produce the correct result?
+So what happened? Why did the code used to generate the purple curve fail to produce the correct result shown in blue?
 
 ## Floating Point Precision
 
